@@ -19,3 +19,6 @@ The project is made up of two part: server and client
 
 ### Server Design
 
+<img style="display: block; margin: 0 auto;" src="static/server.png" alt="" />
+
+similar to Client. Here the Path means the file repository
