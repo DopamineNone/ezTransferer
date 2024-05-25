@@ -30,28 +30,13 @@ typedef struct {
 *   otherwise, size is length of the buffer
 * buffer: 
 *   when code == 0, buffer is detail message of the error
-*   otherwise, buffer is the file content
+*   otherwise, buffer is the file content or file list
 */
 typedef struct {
     unsigned int code;
     unsigned int size;
     char* buffer;
-} FetchResponse;
-
-/*
-* code: status code
-*   0: failed
-*   1: success
-* size: length of the buffer
-*   when code == 0, size == 1
-* filelist: the file list
-*   when code == 0, filelist[0] is the detail message of the error
-*/
-typedef struct {
-    unsigned int code;
-    unsigned int size;
-    char** filelist;
-} ViewResponse;
+} Response;
 
 #ifdef __cplusplus
 }
