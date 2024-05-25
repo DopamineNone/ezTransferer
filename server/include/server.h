@@ -38,9 +38,20 @@ class Server {
         // initialize the server
         Server();
     public:
+        // close the server
+        ~Server();
+
+        // create a new server
         static Server* NewServer();
+
+        // stop all active servers
+        static void StopAllServices(int signum);
+
         // run the server
         void Run();
+
+        // stop the server
+        void Stop();
 
         // handle the request
         void HandleRequest();
@@ -63,11 +74,6 @@ class Server {
         // output log
         void OutputLog(std::string message);
 
-        // stop the server
-        static void Stop(int signum);
-
-        // close the server
-        ~Server();
 };
 
 
