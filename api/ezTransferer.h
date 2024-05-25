@@ -13,6 +13,8 @@ extern "C" {
 * filename: file name to fetch or directory to view
 *   when op == 1, filename == NULL
 */
+#define FETCH_FILE 0
+#define VIEW_DIRECTORY 1
 typedef struct {
     unsigned int op;
     char* filename;
@@ -32,6 +34,12 @@ typedef struct {
 *   when code == 0, buffer is detail message of the error
 *   otherwise, buffer is the file content or file list
 */
+
+#define FAILED 0
+#define START_TRANSFER 1
+#define TRANSFERING 2
+#define FINISHED_SUCCESS 3
+
 typedef struct {
     unsigned int code;
     unsigned int size;
