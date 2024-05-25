@@ -7,8 +7,8 @@ Server::Server() {
 
     // configure the server
     this->SetPort();
-    this->SetLog();
     this->SetRepositary();
+    this->SetLog();
 }
 
 //close the server
@@ -72,6 +72,44 @@ void Server::SetPort() {
     }
 }
 
+// set the repository
+void Server::SetRepositary() {
+    // flag to check if the repository is set
+    bool repository_set = false;
+
+    while (!repository_set) {
+        std::cout << "Please enter the path of directory for the repository(*Required): ";
+        std::string repository_path;
+        std::cin >> repository_path;
+
+        // check if the directory exists
+        DIR* dir = opendir(repository_path.c_str());
+        if (!dir) {
+            std::cout << "Directory does not exist, please enter a valid directory." << std::endl;
+            continue;
+        }
+
+        // check if the directory is writable
+        if (access(repository_path.c_str(), W_OK) != 0) {
+            std::cout << "Directory is not writable, please enter a directory with write permission." << std::endl;
+            continue;
+        }
+
+        // check again whether to use the path
+        std::cout << "Do you want to use the path " << repository_path << " for the repository? (y/n): ";
+        std::string repository_input;
+        std::cin >> repository_input;
+
+        // cancel the use of the file path
+        if (!(repository_input == "y" || repository_input == "Y")) continue;
+
+        // set the repository
+        this->repositary = dir;
+        repository_set = true;
+        std::cout << "Repository set to " << repository_path << std::endl;
+    }
+}
+
 // set the log file
 void Server::SetLog() {
     // check if the log file is neeeded
@@ -120,44 +158,6 @@ void Server::SetLog() {
         }
         log_file_set = true;
         std::cout << "Log file set to " << log_file_path << "/eztransferer.log" << std::endl;
-    }
-}
-
-// set the repository
-void Server::SetRepositary() {
-    // flag to check if the repository is set
-    bool repository_set = false;
-
-    while (!repository_set) {
-        std::cout << "Please enter the path of directory for the repository(*Required): ";
-        std::string repository_path;
-        std::cin >> repository_path;
-
-        // check if the directory exists
-        DIR* dir = opendir(repository_path.c_str());
-        if (!dir) {
-            std::cout << "Directory does not exist, please enter a valid directory." << std::endl;
-            continue;
-        }
-
-        // check if the directory is writable
-        if (access(repository_path.c_str(), W_OK) != 0) {
-            std::cout << "Directory is not writable, please enter a directory with write permission." << std::endl;
-            continue;
-        }
-
-        // check again whether to use the path
-        std::cout << "Do you want to use the path " << repository_path << " for the repository? (y/n): ";
-        std::string repository_input;
-        std::cin >> repository_input;
-
-        // cancel the use of the file path
-        if (!(repository_input == "y" || repository_input == "Y")) continue;
-
-        // set the repository
-        this->repositary = dir;
-        repository_set = true;
-        std::cout << "Repository set to " << repository_path << std::endl;
     }
 }
 

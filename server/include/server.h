@@ -1,6 +1,8 @@
 #ifndef _EZTRANSFERER_SERVER_H
 #define _EZTRANSFERER_SERVER_H
 
+
+#include "../../api/ezTransferer.h"
 #include<stdio.h>
 #include<iostream>
 #include<cstring>
@@ -16,7 +18,6 @@
 #include <fstream>
 #include <string>
 #include <thread>
-#include "../../api/ezTransferer.h"
 #include <string.h>
 #include <csignal>
 #include <vector>
@@ -70,12 +71,12 @@ class Server {
 
         // set the port number
         void SetPort();
-        
-        // set the log file
-        void SetLog();
-        
+
         // set the repositary
         void SetRepositary();
+
+        // set the log file
+        void SetLog();
 
         // output log
         void OutputLog(std::string message);
