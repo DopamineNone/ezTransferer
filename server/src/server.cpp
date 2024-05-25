@@ -9,15 +9,22 @@ Server::Server() {
     this->SetPort();
     this->SetRepositary();
     this->SetLog();
+    this->OutputLog("Finished configuring the server!");
 }
 
 //close the server
 Server::~Server() {
+    // close the socket
+    close(this->sockfd);
+
+    // close the repository
+    closedir(this->repositary);
+
     // close log file
     if (this->log_file.is_open()) {
         this->log_file.close();
     }
-    std::cout << "Server closed..." << std::endl;
+    this->OutputLog("Server stopped.");
 }
 
 // call the constructor of Server
@@ -45,7 +52,44 @@ void Server::StopAllServices(int signum) {
 
 // run the server
 void Server::Run() {
+    // init the socket
+    this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (this->sockfd < 0) {
+        this->OutputLog("Failed to create socket.");
+        this->Stop();
+    }
 
+    // bind the socket
+    sockaddr_in server_addr;
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(this->port);
+    if (bind(this->sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        this->OutputLog("Failed to bind socket.");
+        this->Stop();
+    }
+
+    // listen the socket
+    if (listen(this->sockfd, 10) < 0) {
+        this->OutputLog("Failed to listen socket.");
+        this->Stop();
+    }
+
+    while (true) {
+        // accept the connection
+        sockaddr_in client_addr;
+        socklen_t client_addr_len = sizeof(client_addr);
+        int client_sockfd = accept(this->sockfd, (struct sockaddr*)&client_addr, &client_addr_len);
+        if (client_sockfd < 0) {
+            // failed, close the socket
+            this->OutputLog("Failed to accept connection.");
+            close(client_sockfd);
+        } else {
+            // success, create a new thread to handle the request
+            std::thread new_thread(&Server::HandleRequest, this, client_sockfd);
+            new_thread.detach();
+        }
+    }
 }
 
 // stop server
