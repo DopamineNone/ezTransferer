@@ -64,7 +64,10 @@ void Server::SetRepositary() {
 
 // output log
 void Server::OutputLog(std::string message) {
-
+    if (this->log_file.is_open()) {
+        this->log_file << message << std::endl;
+    }
+    std::cout << message << std::endl;
 }
 
 // handle request
