@@ -26,6 +26,9 @@ class Server {
         // socket that maintain the service
         int sockfd;
 
+        // port number
+        int port;
+
         // log file handler
         std::ofstream log_file;
 
