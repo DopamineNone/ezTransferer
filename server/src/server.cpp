@@ -163,6 +163,16 @@ void Server::SetRepositary() {
 
 // output log
 void Server::OutputLog(std::string message) {
+    // get the current time
+    std::stringstream ss;
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now);
+    ss << std::put_time(std::localtime(&time), "%F %T: ");
+
+    // add time info
+    message = ss.str() + message;
+
+    // output the log message
     if (this->log_file.is_open()) {
         this->log_file << message << std::endl;
     }
