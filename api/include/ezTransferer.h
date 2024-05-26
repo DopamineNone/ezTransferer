@@ -6,6 +6,8 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
+
 /*
 * op: operation code
 *   0: fetch file
@@ -15,10 +17,15 @@ extern "C" {
 */
 #define FETCH_FILE 0
 #define VIEW_DIRECTORY 1
+
+#define MAX_FILENAME_SIZE 255
 typedef struct {
     unsigned int op;
-    char* filename;
+    char filename[MAX_FILENAME_SIZE];
 } Request;
+
+void MarshalRequest(char* buffer, unsigned int op, const char* filename);
+void UnmarshalRequest(char* buffer, int* op, char* filename);
 
 
 /*
@@ -40,11 +47,16 @@ typedef struct {
 #define TRANSFERING 2
 #define FINISHED_SUCCESS 3
 
+#define MAX_BUFFER_SIZE 1024
+
 typedef struct {
     unsigned int code;
     unsigned int size;
-    char* buffer;
+    char buffer[MAX_BUFFER_SIZE];
 } Response;
+
+void MarshalResponse(char* buffer, unsigned int code, unsigned int size, const char* data);
+void UnmarshalResponse(char* buffer, int* code, int* size, char* data);
 
 #ifdef __cplusplus
 }
