@@ -317,6 +317,7 @@ void Server::ListFiles(int client_sockfd, std::string client_info) {
         this->ReportError(client_sockfd, client_info, "Failed to send file list.");
         return;
     }
+    this->OutputLog("Sending file list to " + client_info + ".");
     // transfer file list
     for (int i = 0; i < file_list.length(); i += MAX_BUFFER_SIZE) {
         unsigned int code = TRANSFERING;
@@ -328,10 +329,9 @@ void Server::ListFiles(int client_sockfd, std::string client_info) {
             this->OutputLog("Failed to send file list to " + client_info + ".");
             this->ReportError(client_sockfd, client_info, "Failed to send file list.");
             return;
-        } else {
-            this->OutputLog("Sending file list to " + client_info + ".");
         }
     }
+    this->OutputLog("File list was sent to " + client_info + ".");
 }
 
 // send file
