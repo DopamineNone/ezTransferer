@@ -66,10 +66,10 @@ class Server {
         void HandleRequest(int client_sockfd, std::string client_info);
 
         // list the files in the repositary
-        void ListFiles();
+        void ListFiles(int client_sockfd, std::string client_info);
 
         // send the file
-        void SendFile();
+        void SendFile(int client_sockfd, std::string client_info);
 
         // receive the file
         void ReportError(int client_sockfd, std::string client_info,std::string message);

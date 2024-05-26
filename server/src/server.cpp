@@ -105,16 +105,47 @@ void Server::SetPort() {
     bool port_set = false;
 
     while (!port_set) {
+        int port;
         std::cout << "Please enter the port number for the server[1024-65535](*Required): ";
-        std::cin >> this->port;
+        std::cin >> port;
 
         // check if the port is valid
-        if (this->port < 1024 || this->port > 65535) {
+        if (port < 1024 || port > 65535) {
             std::cout << "Invalid port number, please enter a number between 1024 and 65535." << std::endl;
-        } else {
-            std::cout << "Port set to " << this->port << std::endl;
-            port_set = true;
+            continue;
         } 
+
+        // check if the port is available
+        this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (this->sockfd < 0) {
+            std::cout << "Failed to create socket, please try again." << std::endl;
+            continue;
+        }
+        sockaddr_in test_addr;
+        test_addr.sin_family = AF_INET;
+        test_addr.sin_addr.s_addr = INADDR_ANY;
+        test_addr.sin_port = htons(port);
+        if (bind(this->sockfd, (struct sockaddr*)&test_addr, sizeof(test_addr)) < 0) {
+            std::cout << "Port " << port << " is already in use, please enter a different port." << std::endl;
+            close(this->sockfd);
+            continue;
+        }
+
+        //check again whether to use the port
+        std::cout << "Do you want to use the port " << port << " for the server? (y/n): ";
+        std::string port_input;
+        std::cin >> port_input;
+
+        // cancel the use of the port
+        if (!(port_input == "y" || port_input == "Y")) {
+            close(this->sockfd);
+            continue;
+        }
+
+        // set the port
+        this->port = port;
+        std::cout << "Port set to " << this->port << std::endl;
+        port_set = true;
     }
 }
 
@@ -246,10 +277,10 @@ void Server::HandleRequest(int client_sockfd, std::string client_info) {
             switch (request.op)
             {
             case FETCH_FILE:
-                this->SendFile();
+                this->SendFile(client_sockfd, client_info);
                 break;
             case VIEW_DIRECTORY:
-                this->ListFiles();
+                this->ListFiles(client_sockfd, client_info);
                 break;
             default:
                 this->OutputLog("Received invalid operation code.");
@@ -270,12 +301,12 @@ void Server::HandleRequest(int client_sockfd, std::string client_info) {
 }
 
 // list files
-void Server::ListFiles() {
+void Server::ListFiles(int client_sockfd, std::string client_info) {
 
 }
 
 // send file
-void Server::SendFile() {
+void Server::SendFile(int client_sockfd, std::string client_info) {
 
 }
 
@@ -291,7 +322,7 @@ void Server::ReportError(int client_sockfd, std::string client_info, std::string
 
     // create the response
     MarshalResponse(buffer, FAILED, message.length(), message.c_str());
-    
+
     // send the response
     int send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
     if (send_bytes <= 0) {
