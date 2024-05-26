@@ -86,7 +86,9 @@ void Server::Run() {
             close(client_sockfd);
         } else {
             // success, create a new thread to handle the request
-            std::thread new_thread(&Server::HandleRequest, this, client_sockfd);
+            std::string client_info = std::string(inet_ntoa(client_addr.sin_addr))+":"+std::to_string(ntohs(client_addr.sin_port));
+            this->OutputLog("New connection from " + client_info);
+            std::thread new_thread(&Server::HandleRequest, this, client_sockfd, client_info);
             new_thread.detach();
         }
     }
@@ -224,42 +226,41 @@ void Server::OutputLog(std::string message) {
 }
 
 // handle request
-void Server::HandleRequest(int client_sockfd) {
+void Server::HandleRequest(int client_sockfd, std::string client_info) {
     char buffer[MAX_BUFFER_SIZE];
     Request request;
     ssize_t recv_bytes = recv(client_sockfd, buffer, MAX_BUFFER_SIZE, 0);
 
     // check if the request is received
     if (recv_bytes <= 0) {
-        this->OutputLog("Failed to receive request.");
-        int send_bytes = send(client_sockfd, "Failed to receive request.", strlen("Failed to receive request."), 0);
-        if (send_bytes <= 0) {
-            this->OutputLog("Failed to send feedback response for failed request.");
-        } else {
-            this->OutputLog("Feedback response for failed request sent.");
-        }
+        this->OutputLog("Failed to receive request from " + client_info + ".");
+        this->ReportError(client_sockfd, client_info, "Failed to receive request.");
     } else {
-        // parse the request
-        request.ParseRequest(buffer);
-
-        // handle the request
-        switch (request.op)
+        try
         {
-        case FETCH_FILE:
-            /* code */
-            break;
-        case VIEW_DIRECTORY:
+            // parse the request
+            memcpy(&request, buffer, sizeof(Request));
+            this->OutputLog("Parsed request from " + client_info + " with operation code " + std::to_string(request.op));
 
-            break;
-        default:
-            this->OutputLog("Received invalid operation code.");
-            int send_bytes = send(client_sockfd, "Please enter a valid operation code.", strlen("Please enter a valid operation code."), 0);
-            if (send_bytes <= 0) {
-                this->OutputLog("Failed to send feedback response for invalid operation code.");
-            } else {
-                this->OutputLog("Feedback response for invalid operation code sent.");
+            // handle the request
+            switch (request.op)
+            {
+            case FETCH_FILE:
+                this->SendFile();
+                break;
+            case VIEW_DIRECTORY:
+                this->ListFiles();
+                break;
+            default:
+                this->OutputLog("Received invalid operation code.");
+                this->ReportError(client_sockfd, client_info, "Invalid operation code.");
+                break;
             }
-            break;
+        }
+        catch(const std::exception& e)
+        {
+            this->OutputLog("Failed to parse request from " + client_info + ".");
+
         }
     }
 
@@ -277,4 +278,26 @@ void Server::ListFiles() {
 void Server::SendFile() {
 
 }
+
+// report error to client
+void Server::ReportError(int client_sockfd, std::string client_info, std::string message = "") {
+    char buffer[MAX_BUFFER_SIZE];
+
+    // resize message size
+    if (message.size() > MAX_BUFFER_SIZE) {
+        std::cout << "Error message is too long, truncated to " << MAX_BUFFER_SIZE << " characters." << std::endl;
+        message.resize(MAX_BUFFER_SIZE);
+    }
+
+    // create the response
+    MarshalResponse(buffer, FAILED, message.length(), message.c_str());
+    
+    // send the response
+    int send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
+    if (send_bytes <= 0) {
+        this->OutputLog("Failed to send error message to client: " + client_info + ".");
+    } else {
+        this->OutputLog("Error message was sent to client: " + client_info + ".");
+    }
+}   
 

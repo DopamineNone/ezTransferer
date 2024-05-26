@@ -2,7 +2,7 @@
 #define _EZTRANSFERER_SERVER_H
 
 
-#include "../../api/ezTransferer.h"
+#include "../../api/include/ezTransferer.h"
 #include<stdio.h>
 #include<iostream>
 #include<cstring>
@@ -25,7 +25,6 @@
 #include <chrono>
 #include <sstream>
 
-#define MAX_BUFFER_SIZE 1024
 #define MAX_CLIENTS 10
 
 class Server {
@@ -64,13 +63,16 @@ class Server {
         void Stop();
 
         // handle the request
-        void HandleRequest(int client_sockfd);
+        void HandleRequest(int client_sockfd, std::string client_info);
 
         // list the files in the repositary
         void ListFiles();
 
         // send the file
         void SendFile();
+
+        // receive the file
+        void ReportError(int client_sockfd, std::string client_info,std::string message);
 
         // set the port number
         void SetPort();
