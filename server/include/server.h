@@ -25,6 +25,9 @@
 #include <chrono>
 #include <sstream>
 
+#define MAX_BUFFER_SIZE 1024
+#define MAX_CLIENTS 10
+
 class Server {
     private:
         // socket that maintain the service
@@ -61,7 +64,7 @@ class Server {
         void Stop();
 
         // handle the request
-        void HandleRequest();
+        void HandleRequest(int client_sockfd);
 
         // list the files in the repositary
         void ListFiles();

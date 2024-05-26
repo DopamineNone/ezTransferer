@@ -224,7 +224,47 @@ void Server::OutputLog(std::string message) {
 }
 
 // handle request
-void Server::HandleRequest() {
+void Server::HandleRequest(int client_sockfd) {
+    char buffer[MAX_BUFFER_SIZE];
+    Request request;
+    ssize_t recv_bytes = recv(client_sockfd, buffer, MAX_BUFFER_SIZE, 0);
+
+    // check if the request is received
+    if (recv_bytes <= 0) {
+        this->OutputLog("Failed to receive request.");
+        int send_bytes = send(client_sockfd, "Failed to receive request.", strlen("Failed to receive request."), 0);
+        if (send_bytes <= 0) {
+            this->OutputLog("Failed to send feedback response for failed request.");
+        } else {
+            this->OutputLog("Feedback response for failed request sent.");
+        }
+    } else {
+        // parse the request
+        request.ParseRequest(buffer);
+
+        // handle the request
+        switch (request.op)
+        {
+        case FETCH_FILE:
+            /* code */
+            break;
+        case VIEW_DIRECTORY:
+
+            break;
+        default:
+            this->OutputLog("Received invalid operation code.");
+            int send_bytes = send(client_sockfd, "Please enter a valid operation code.", strlen("Please enter a valid operation code."), 0);
+            if (send_bytes <= 0) {
+                this->OutputLog("Failed to send feedback response for invalid operation code.");
+            } else {
+                this->OutputLog("Feedback response for invalid operation code sent.");
+            }
+            break;
+        }
+    }
+
+    // close the socket
+    close(client_sockfd);
 
 }
 
