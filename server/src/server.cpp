@@ -7,7 +7,7 @@ Server::Server() {
 
     // configure the server
     this->SetPort();
-    this->SetRepositary();
+    this->SetRepository();
     this->SetLog();
     this->OutputLog("Finished configuring the server!");
 }
@@ -52,23 +52,6 @@ void Server::StopAllServices(int signum) {
 
 // run the server
 void Server::Run() {
-    // init the socket
-    this->sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (this->sockfd < 0) {
-        this->OutputLog("Failed to create socket.");
-        this->Stop();
-    }
-
-    // bind the socket
-    sockaddr_in server_addr;
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(this->port);
-    if (bind(this->sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        this->OutputLog("Failed to bind socket.");
-        this->Stop();
-    }
-
     // listen the socket
     if (listen(this->sockfd, 10) < 0) {
         this->OutputLog("Failed to listen socket.");
@@ -150,7 +133,7 @@ void Server::SetPort() {
 }
 
 // set the repository
-void Server::SetRepositary() {
+void Server::SetRepository() {
     // flag to check if the repository is set
     bool repository_set = false;
 
@@ -302,7 +285,53 @@ void Server::HandleRequest(int client_sockfd, std::string client_info) {
 
 // list files
 void Server::ListFiles(int client_sockfd, std::string client_info) {
+    // check if the repository is set
+    if (!this->repositary) {
+        this->OutputLog("Failed to list files, repository is lost, server shut down.");
+        this->ReportError(client_sockfd, client_info, "Repository is not set.");
+        this->Stop();
+        return;
+    }
 
+    // set file lists
+    std::stringstream ss;
+    dirent* entry;
+    while ((entry = readdir(this->repositary))) {
+        // skip directories
+        if (entry->d_type == DT_DIR) continue;
+
+        // skip hidden files
+        if (entry->d_name[0] == '.') continue;
+
+        ss << entry->d_name << " ";  
+    }
+
+    // send the response
+    // start transfer
+    std::string file_list = ss.str();
+    char buffer[MAX_BUFFER_SIZE];
+    MarshalResponse(buffer, START_TRANSFER, file_list.length(), nullptr);
+    int send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
+    if (send_bytes <= 0) {
+        this->OutputLog("Failed to send file list to " + client_info + ".");
+        this->ReportError(client_sockfd, client_info, "Failed to send file list.");
+        return;
+    }
+    // transfer file list
+    for (int i = 0; i < file_list.length(); i += MAX_BUFFER_SIZE) {
+        unsigned int code = TRANSFERING;
+        std::string response = file_list.substr(i, MAX_BUFFER_SIZE);
+        if (i + MAX_BUFFER_SIZE >= file_list.length() ) code = FINISHED_SUCCESS;
+        MarshalResponse(buffer, code, response.length(), response.c_str());
+        send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
+        if (send_bytes <= 0) {
+            this->OutputLog("Failed to send file list to " + client_info + ".");
+            this->ReportError(client_sockfd, client_info, "Failed to send file list.");
+            return;
+        } else {
+            this->OutputLog("Sending file list to " + client_info + ".");
+        }
+    }
 }
 
 // send file

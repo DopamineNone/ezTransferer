@@ -77,8 +77,8 @@ class Server {
         // set the port number
         void SetPort();
 
-        // set the repositary
-        void SetRepositary();
+        // set the repository
+        void SetRepository();
 
         // set the log file
         void SetLog();
