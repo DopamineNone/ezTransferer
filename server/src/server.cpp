@@ -18,7 +18,9 @@ Server::~Server() {
     close(this->sockfd);
 
     // close the repository
-    closedir(this->repositary);
+    if (this->repository_path != nullptr) {
+        delete this->repository_path;
+    }
 
     // close log file
     if (this->log_file.is_open()) {
@@ -157,14 +159,17 @@ void Server::SetRepository() {
 
         // check again whether to use the path
         std::cout << "Do you want to use the path " << repository_path << " for the repository? (y/n): ";
-        std::string repository_input;
-        std::cin >> repository_input;
+        std::string input;
+        std::cin >> input;
 
         // cancel the use of the file path
-        if (!(repository_input == "y" || repository_input == "Y")) continue;
+        if (!(input == "y" || input == "Y")) continue;
 
         // set the repository
-        this->repositary = dir;
+        int n = repository_path.length() + 1;
+        this->repository_path = new char[n];
+        strncpy(this->repository_path, repository_path.c_str(), n);
+        closedir(dir);
         repository_set = true;
         std::cout << "Repository set to " << repository_path << std::endl;
     }
@@ -241,9 +246,8 @@ void Server::OutputLog(std::string message) {
 
 // handle request
 void Server::HandleRequest(int client_sockfd, std::string client_info) {
-    char buffer[MAX_BUFFER_SIZE];
-    Request request;
-    ssize_t recv_bytes = recv(client_sockfd, buffer, MAX_BUFFER_SIZE, 0);
+    char buffer[sizeof(Request)];
+    ssize_t recv_bytes = recv(client_sockfd, buffer, sizeof(Request), 0);
 
     // check if the request is received
     if (recv_bytes <= 0) {
@@ -253,14 +257,16 @@ void Server::HandleRequest(int client_sockfd, std::string client_info) {
         try
         {
             // parse the request
-            memcpy(&request, buffer, sizeof(Request));
-            this->OutputLog("Parsed request from " + client_info + " with operation code " + std::to_string(request.op));
+            int op;
+            char filename[MAX_FILENAME_SIZE];
+            UnmarshalRequest(buffer, &op, filename);
+            this->OutputLog("Parsed request from " + client_info + " with operation code " + std::to_string(op));
 
             // handle the request
-            switch (request.op)
+            switch (op)
             {
             case FETCH_FILE:
-                this->SendFile(client_sockfd, client_info);
+                this->SendFile(client_sockfd, client_info, filename);
                 break;
             case VIEW_DIRECTORY:
                 this->ListFiles(client_sockfd, client_info);
@@ -286,7 +292,8 @@ void Server::HandleRequest(int client_sockfd, std::string client_info) {
 // list files
 void Server::ListFiles(int client_sockfd, std::string client_info) {
     // check if the repository is set
-    if (!this->repositary) {
+    DIR* dir;
+    if (!(dir = opendir(this->repository_path))) {
         this->OutputLog("Failed to list files, repository is lost, server shut down.");
         this->ReportError(client_sockfd, client_info, "Repository is not set.");
         this->Stop();
@@ -296,7 +303,7 @@ void Server::ListFiles(int client_sockfd, std::string client_info) {
     // set file lists
     std::stringstream ss;
     dirent* entry;
-    while ((entry = readdir(this->repositary))) {
+    while ((entry = readdir(dir))) {
         // skip directories
         if (entry->d_type == DT_DIR) continue;
 
@@ -309,7 +316,7 @@ void Server::ListFiles(int client_sockfd, std::string client_info) {
     // send the response
     // start transfer
     std::string file_list = ss.str();
-    char buffer[MAX_BUFFER_SIZE];
+    char buffer[sizeof(Response)];
     MarshalResponse(buffer, START_TRANSFER, file_list.length(), nullptr);
     int send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
     if (send_bytes <= 0) {
@@ -318,12 +325,11 @@ void Server::ListFiles(int client_sockfd, std::string client_info) {
         return;
     }
     this->OutputLog("Sending file list to " + client_info + ".");
+
     // transfer file list
     for (int i = 0; i < file_list.length(); i += MAX_BUFFER_SIZE) {
-        unsigned int code = TRANSFERING;
         std::string response = file_list.substr(i, MAX_BUFFER_SIZE);
-        if (i + MAX_BUFFER_SIZE >= file_list.length() ) code = FINISHED_SUCCESS;
-        MarshalResponse(buffer, code, response.length(), response.c_str());
+        MarshalResponse(buffer, TRANSFERING, response.length(), response.c_str());
         send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
         if (send_bytes <= 0) {
             this->OutputLog("Failed to send file list to " + client_info + ".");
@@ -331,17 +337,93 @@ void Server::ListFiles(int client_sockfd, std::string client_info) {
             return;
         }
     }
+
+    // send the end of transfer message
+    MarshalResponse(buffer, FINISHED_SUCCESS, 0, nullptr);
+    send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
+    if (send_bytes <= 0) {
+        this->OutputLog("Failed to send file list end message to " + client_info + ".");
+        this->ReportError(client_sockfd, client_info, "Failed to send file list end message.");
+        return;
+    }
     this->OutputLog("File list was sent to " + client_info + ".");
 }
 
 // send file
-void Server::SendFile(int client_sockfd, std::string client_info) {
+void Server::SendFile(int client_sockfd, std::string client_info, char* filename) {
+    // check if the repository is set
+    DIR* dir;
+    if (!(dir = opendir(this->repository_path))) {
+        this->OutputLog("Failed to list files, repository is lost, server shut down.");
+        this->ReportError(client_sockfd, client_info, "Repository is not set.");
+        this->Stop();
+        return;
+    }
+
+    // filter malformed filename
+    std::string file_name(filename);
+    if (file_name.find('/') != std::string::npos || file_name.find('\\') != std::string::npos ||
+    file_name[0] == '.' || file_name.empty() || std::count(file_name.begin(),file_name.end(), '.') > 1) {
+        this->OutputLog("Received malformed filename from " + client_info + ".");
+        this->ReportError(client_sockfd, client_info, "Malformed filename.");
+        return;
+    }
+
+    // find the file
+    // start transfer
+    std::ifstream file(std::string(this->repository_path) + "/" + file_name, std::ios::binary);
+    if (!file.is_open()) {
+        this->OutputLog("Failed to open file " + file_name + " for reading.");
+        this->ReportError(client_sockfd, client_info, "Non-existent file or permission denied to fetch the file.");
+        return;
+    }
+
+    // set the file size
+    file.seekg(0, std::ios::end);
+    int file_size = static_cast<int>(file.tellg());
+    file.seekg(0, std::ios::beg);
+    this->OutputLog("Sending file " + file_name + " to " + client_info + ".");
+    char buffer[sizeof(Response)];
+    MarshalResponse(buffer, START_TRANSFER, file_size, nullptr);
+    int send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
+    if (send_bytes <= 0) {
+        this->OutputLog("Failed to send file header to " + client_info + ".");
+        this->ReportError(client_sockfd, client_info, "Failed to send file header.");
+        return;
+    }
+
+    // transfer file
+    while (!file.eof()) {
+        char data[MAX_BUFFER_SIZE];
+        file.read(data, MAX_BUFFER_SIZE);
+        int read_bytes = file.gcount();
+        if (read_bytes <= 0) break;
+        MarshalResponse(buffer, TRANSFERING, read_bytes, data);
+        send_bytes = send(client_sockfd, buffer, sizeof(Response) + read_bytes, 0);
+        if (send_bytes <= 0) {
+            this->OutputLog("Failed to send file data to " + client_info + ".");
+            this->ReportError(client_sockfd, client_info, "Failed to send file data.");
+            file.close();
+            return;
+        }
+    }
+
+    // send the end of transfer message
+    file.close();
+    MarshalResponse(buffer, FINISHED_SUCCESS, 0, nullptr);
+    send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
+    if (send_bytes <= 0) {
+        this->OutputLog("Failed to send file end message to " + client_info + ".");
+        this->ReportError(client_sockfd, client_info, "Failed to send file end message.");
+        return;
+    }
+    this->OutputLog("File " + file_name + " was sent to " + client_info + ".");
 
 }
 
 // report error to client
 void Server::ReportError(int client_sockfd, std::string client_info, std::string message = "") {
-    char buffer[MAX_BUFFER_SIZE];
+    char buffer[sizeof(Response)];
 
     // resize message size
     if (message.size() > MAX_BUFFER_SIZE) {

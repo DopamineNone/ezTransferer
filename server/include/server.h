@@ -24,6 +24,7 @@
 #include <iomanip>
 #include <chrono>
 #include <sstream>
+#include <algorithm>
 
 #define MAX_CLIENTS 10
 
@@ -39,7 +40,7 @@ class Server {
         std::ofstream log_file;
 
         // repositary handler
-        DIR* repositary;
+        char* repository_path;
 
         // active server list
         static std::vector<Server*> server_list;
@@ -69,7 +70,7 @@ class Server {
         void ListFiles(int client_sockfd, std::string client_info);
 
         // send the file
-        void SendFile(int client_sockfd, std::string client_info);
+        void SendFile(int client_sockfd, std::string client_info, char* filename);
 
         // receive the file
         void ReportError(int client_sockfd, std::string client_info,std::string message);
