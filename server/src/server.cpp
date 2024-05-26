@@ -1,5 +1,8 @@
 #include "../include/server.h"
 
+// init the list of servers
+std::vector<Server*> Server::server_list = std::vector<Server*>();
+
 // init the server
 Server::Server() {
     // show tips and info
@@ -14,6 +17,8 @@ Server::Server() {
 
 //close the server
 Server::~Server() {
+    this->OutputLog("Server stopped.");
+
     // close the socket
     close(this->sockfd);
 
@@ -26,7 +31,6 @@ Server::~Server() {
     if (this->log_file.is_open()) {
         this->log_file.close();
     }
-    this->OutputLog("Server stopped.");
 }
 
 // call the constructor of Server
@@ -35,7 +39,7 @@ Server* Server::NewServer() {
     Server* server = new Server();
 
     // add the server to the list
-    Server::server_list.push_back(server);
+    server_list.push_back(server);
 
     return server;
 }
@@ -43,12 +47,14 @@ Server* Server::NewServer() {
 // stop all active servers
 void Server::StopAllServices(int signum) {
     // Ctrl-C quit the program
-    if (signum == 2) {
-        while (!Server::server_list.empty()) {
-            Server* server = Server::server_list.back();
-            server->Stop();
-            Server::server_list.pop_back();
-        }
+    if (signum == SIGINT) {
+        // while (!server_list.empty()) {
+        //     Server* server = server_list.back();
+        //     if (server != nullptr) server->Stop();
+        //     server_list.pop_back();
+        // }
+        std::cout << "Stopping all servers..." << std::endl;
+        exit(0);
     }
 }
 
@@ -60,6 +66,8 @@ void Server::Run() {
         this->Stop();
     }
 
+    // start the server
+    this->OutputLog("Server running...");
     while (true) {
         // accept the connection
         sockaddr_in client_addr;
@@ -257,7 +265,7 @@ void Server::HandleRequest(int client_sockfd, std::string client_info) {
         try
         {
             // parse the request
-            int op;
+            unsigned int op;
             char filename[MAX_FILENAME_SIZE];
             UnmarshalRequest(buffer, &op, filename);
             this->OutputLog("Parsed request from " + client_info + " with operation code " + std::to_string(op));
@@ -329,7 +337,10 @@ void Server::ListFiles(int client_sockfd, std::string client_info) {
     // transfer file list
     for (int i = 0; i < file_list.length(); i += MAX_BUFFER_SIZE) {
         std::string response = file_list.substr(i, MAX_BUFFER_SIZE);
-        MarshalResponse(buffer, TRANSFERING, response.length(), response.c_str());
+        char* data = new char[response.length()];
+        std::strncpy(data, response.c_str(), response.length());
+        MarshalResponse(buffer, TRANSFERING, response.length(), data);
+        delete[] data;
         send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
         if (send_bytes <= 0) {
             this->OutputLog("Failed to send file list to " + client_info + ".");
@@ -432,7 +443,10 @@ void Server::ReportError(int client_sockfd, std::string client_info, std::string
     }
 
     // create the response
-    MarshalResponse(buffer, FAILED, message.length(), message.c_str());
+    char* data = new char[message.length()];
+    std::strncpy(data, message.c_str(), message.length());
+    MarshalResponse(buffer, FAILED, message.length(), data);
+    delete[] data;
 
     // send the response
     int send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
@@ -442,4 +456,3 @@ void Server::ReportError(int client_sockfd, std::string client_info, std::string
         this->OutputLog("Error message was sent to client: " + client_info + ".");
     }
 }   
-

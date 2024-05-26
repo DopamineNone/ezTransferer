@@ -56,3 +56,7 @@ dkms.conf
 *.svg
 
 .vscode/
+
+/repository
+/logs
+*/bin

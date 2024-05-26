@@ -9,7 +9,7 @@ void MarshalRequest(char* buffer, unsigned int op, char* filename) {
     memcpy(buffer, &req, sizeof(Request));
 }
 
-void UnmarshalRequest(char* buffer, unsigned int* op, const char* filename) { 
+void UnmarshalRequest(char* buffer, unsigned int* op, char* filename) { 
     Request req;
     memcpy(&req, buffer, sizeof(Request));
     *op = req.op;
@@ -28,7 +28,7 @@ void MarshalResponse(char* buffer, unsigned int code, unsigned int size, char* d
     memcpy(buffer, &resp, sizeof(Response));
 }
 
-void UnmarshalResponse(char* buffer, unsigned int* code, unsigned int *size, const char* data) {
+void UnmarshalResponse(char* buffer, unsigned int* code, unsigned int *size, char* data) {
     Response resp;
     memcpy(&resp, buffer, sizeof(Response));
     *code = resp.code;

@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-#include <stdlib.h>
+#include <string.h>
 
 /*
 * op: operation code
@@ -24,8 +24,8 @@ typedef struct {
     char filename[MAX_FILENAME_SIZE];
 } Request;
 
-void MarshalRequest(char* buffer, unsigned int op, const char* filename);
-void UnmarshalRequest(char* buffer, int* op, char* filename);
+void MarshalRequest(char* buffer, unsigned int op, char* filename);
+void UnmarshalRequest(char* buffer, unsigned int* op, char* filename);
 
 
 /*
@@ -55,8 +55,8 @@ typedef struct {
     char buffer[MAX_BUFFER_SIZE];
 } Response;
 
-void MarshalResponse(char* buffer, unsigned int code, unsigned int size, const char* data);
-void UnmarshalResponse(char* buffer, int* code, int* size, char* data);
+void MarshalResponse(char* buffer, unsigned int code, unsigned int size, char* data);
+void UnmarshalResponse(char* buffer, unsigned int* code, unsigned int* size, char* data);
 
 #ifdef __cplusplus
 }
