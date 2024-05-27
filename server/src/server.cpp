@@ -48,12 +48,8 @@ Server* Server::NewServer() {
 void Server::StopAllServices(int signum) {
     // Ctrl-C quit the program
     if (signum == SIGINT) {
-        // while (!server_list.empty()) {
-        //     Server* server = server_list.back();
-        //     if (server != nullptr) server->Stop();
-        //     server_list.pop_back();
-        // }
         std::cout << "Stopping all servers..." << std::endl;
+        while (!server_list.empty()) server_list[0]->Stop();
         exit(0);
     }
 }
@@ -89,6 +85,14 @@ void Server::Run() {
 
 // stop server
 void Server::Stop() {
+    // delete this from server_list
+    for (int i = 0; i < server_list.size(); i++) {
+        if (server_list[i] == this) {
+            server_list.erase(server_list.begin() + i);
+            this->OutputLog("Server " + std::to_string(i) + " stopped.");
+            break;
+        }
+    }
     delete this;
 }
 
