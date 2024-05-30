@@ -74,7 +74,7 @@ int main() {
         
         UnmarshalResponse(buffer,&code, &size, &data);
         if (code==TRANSFERING)
-            fwrite(data, 1, size, fp);
+            fwrite(&data, 1, size, fp);
         else
             continue;
     }
