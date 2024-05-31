@@ -414,7 +414,7 @@ void Server::SendFile(int client_sockfd, std::string client_info, char* filename
         int read_bytes = file.gcount();
         if (read_bytes <= 0) break;
         MarshalResponse(buffer, TRANSFERING, read_bytes, data);
-        send_bytes = send(client_sockfd, buffer, sizeof(Response) + read_bytes, 0);
+        send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
         if (send_bytes <= 0) {
             this->OutputLog("Failed to send file data to " + client_info + ".");
             this->ReportError(client_sockfd, client_info, "Failed to send file data.");
