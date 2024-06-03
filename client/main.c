@@ -49,11 +49,11 @@ int main() {
         printf("Connection failed.\n");
         return 1;
     }
-
+    scanf("%c",&ins);
 
     printf("Enter An Instruction:(\"h\"for Help)\n");
-    ins = getchar();
     while(ins != 'e'){
+        
         switch(ins){
             case 'f':
             fetch(client_socket);
@@ -63,10 +63,12 @@ int main() {
             break;
             case 'h':
             intro();
+            break;
             default:
             printf("Wrong!Input again or input \"h\"for Help\n");
+            break;
         }
-        ins = getchar();
+        scanf(" %c",&ins);
     }
 
     closesocket(client_socket);
@@ -100,7 +102,6 @@ void fetch(SOCKET client_socket){
     FILE *fp = fopen(filename, "wb");
     if (fp == NULL) {
         printf("File creation failed.\n");
-        return 1;
     }
 
     // receive
@@ -108,15 +109,13 @@ void fetch(SOCKET client_socket){
     char buffer[sizeof(Response)];
     unsigned int code;
     unsigned int size;
-    char data;
+    char data[32517];
 
     while ((bytes_received = recv(client_socket, buffer, sizeof(Response), 0)) > 0) {
         
-        UnmarshalResponse(buffer,&code, &size, &data);
+        UnmarshalResponse(buffer,&code, &size, data);
         if (code==TRANSFERING)
-            fwrite(&data, 1, size, fp);
-        else
-            continue;
+            fwrite(data, 1, size, fp);
     }
 
     fclose(fp);
@@ -125,6 +124,27 @@ void fetch(SOCKET client_socket){
 }
 
 void view(SOCKET client_socket){
+    char buffer_view[sizeof(Request)];
+    MarshalRequest(buffer_view, 1, NULL);
 
+
+    send(client_socket, buffer_view, sizeof(Request), 0);
+
+    int bytes_received;
+    char buffer[sizeof(Response)];
+    unsigned int code;
+    unsigned int size;
+    char data[32517];
+    
+    //receive
+
+    while ((bytes_received = recv(client_socket, buffer, sizeof(Response), 0)) > 0) {
+        
+        UnmarshalResponse(buffer,&code, &size, data);
+        if(code==2)
+            printf("%s",data);
+
+    }
+    printf("\n");
 }
 
