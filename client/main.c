@@ -9,21 +9,27 @@
 #define PORT 8080
 #define BUFFER_SIZE 1024
 
+void transfer(SOCKET);
+void intro();
+void files(SOCKET);
+
+
 int main() {
+    char ins;
+
+    printf("///EZTRANSFER///\n");
+
     WSADATA wsa;
     SOCKET client_socket;
     struct sockaddr_in server;
     
-    char filename[100];
     char server_ip[16];
 
-    // initialize Winsock
     if (WSAStartup(MAKEWORD(2,2), &wsa) != 0) {
         printf("WSAStartup failed.\n");
         return 1;
     }
 
-    // client socket
     if ((client_socket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
         printf("Socket creation failed.\n");
         return 1;
@@ -36,17 +42,51 @@ int main() {
     
     // server config
     server.sin_family = AF_INET;
-    server.sin_addr.s_addr = inet_addr(server_ip); // 服务器IP地址
+    server.sin_addr.s_addr = inet_addr(server_ip);
     server.sin_port = htons(PORT);
 
-    // 连接到服务器
     if (connect(client_socket, (struct sockaddr *)&server, sizeof(server)) < 0) {
         printf("Connection failed.\n");
         return 1;
     }
 
 
-    // 输入要下载的文件名
+    printf("Enter An Instruction:(\"h\"for help)\n");
+    ins = getchar();
+    while(ins != 'e'){
+        switch(ins){
+            case 't':
+            transfer(client_socket);
+            break;
+            case 'f':
+            files(client_socket);
+            break;
+            case 'h':
+            intro();
+            default:
+            printf("Wrong!Input again or input \"h\"for help\n");
+        }
+        ins = getchar();
+    }
+
+    closesocket(client_socket);
+    WSACleanup();
+    return 0;
+
+}
+
+void intro(){
+    printf("This is a file tranferer\n");
+    printf("Input \"t\" to get file from server\n");
+    printf("Input \"f\" to check the catagroy of the files\n");
+    printf("Input \"e\" to exit\n");
+}
+
+
+void transfer(SOCKET client_socket){
+    
+    char filename[100];
+    
     printf("\nEnter the filename you want to download: ");
     fgets(filename, 100, stdin);
     // 去除换行符
@@ -82,7 +122,9 @@ int main() {
     fclose(fp);
     printf("File downloaded successfully.\n");
 
-    closesocket(client_socket);
-    WSACleanup();
-    return 0;
 }
+
+void files(SOCKET client_socket){
+    
+}
+
