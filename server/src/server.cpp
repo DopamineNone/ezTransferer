@@ -449,7 +449,7 @@ void Server::ReportError(int client_sockfd, std::string client_info, std::string
     // create the response
     char* data = new char[message.length()];
     std::strncpy(data, message.c_str(), message.length());
-    MarshalResponse(buffer, FAILED, message.length(), data);
+    MarshalResponse(buffer, FA1LED, message.length(), data);
     delete[] data;
 
     // send the response
