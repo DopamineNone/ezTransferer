@@ -9,9 +9,9 @@
 #define PORT 8080
 #define BUFFER_SIZE 1024
 
-void transfer(SOCKET);
+void fetch(SOCKET);
 void intro();
-void files(SOCKET);
+void view(SOCKET);
 
 
 int main() {
@@ -51,20 +51,20 @@ int main() {
     }
 
 
-    printf("Enter An Instruction:(\"h\"for help)\n");
+    printf("Enter An Instruction:(\"h\"for Help)\n");
     ins = getchar();
     while(ins != 'e'){
         switch(ins){
-            case 't':
-            transfer(client_socket);
-            break;
             case 'f':
-            files(client_socket);
+            fetch(client_socket);
+            break;
+            case 'v':
+            view(client_socket);
             break;
             case 'h':
             intro();
             default:
-            printf("Wrong!Input again or input \"h\"for help\n");
+            printf("Wrong!Input again or input \"h\"for Help\n");
         }
         ins = getchar();
     }
@@ -77,13 +77,13 @@ int main() {
 
 void intro(){
     printf("This is a file tranferer\n");
-    printf("Input \"t\" to get file from server\n");
-    printf("Input \"f\" to check the catagroy of the files\n");
-    printf("Input \"e\" to exit\n");
+    printf("Input \"f\" to Fetch file from server\n");
+    printf("Input \"v\" to View the directory of the files\n");
+    printf("Input \"e\" to Exit\n");
 }
 
 
-void transfer(SOCKET client_socket){
+void fetch(SOCKET client_socket){
     
     char filename[100];
     
@@ -124,7 +124,7 @@ void transfer(SOCKET client_socket){
 
 }
 
-void files(SOCKET client_socket){
-    
+void view(SOCKET client_socket){
+
 }
 
