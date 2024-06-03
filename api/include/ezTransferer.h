@@ -42,7 +42,7 @@ void UnmarshalRequest(char* buffer, unsigned int* op, char* filename);
 *   otherwise, buffer is the file content or file list
 */
 
-#define FA1LED 0
+#define FAILED 0
 #define START_TRANSFER 1
 #define TRANSFERING 2
 #define FINISHED_SUCCESS 3
