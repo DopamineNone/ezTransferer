@@ -298,7 +298,7 @@ void Server::HandleRequest(int client_sockfd, std::string client_info) {
 
     // close the socket
     close(client_sockfd);
-
+    this->OutputLog("Connection from " + client_info + " closed.");
 }
 
 // list files
@@ -413,9 +413,11 @@ void Server::SendFile(int client_sockfd, std::string client_info, char* filename
         file.read(data, MAX_BUFFER_SIZE);
         int read_bytes = file.gcount();
         if (read_bytes <= 0) break;
+        // std::cout << "Read " << read_bytes << " bytes." << std::endl;
         MarshalResponse(buffer, TRANSFERING, read_bytes, data);
         send_bytes = send(client_sockfd, buffer, sizeof(Response), 0);
         if (send_bytes <= 0) {
+            std::cout << "send_bytes <= 0" << send_bytes<< std::endl;
             this->OutputLog("Failed to send file data to " + client_info + ".");
             this->ReportError(client_sockfd, client_info, "Failed to send file data.");
             file.close();

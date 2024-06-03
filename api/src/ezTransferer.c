@@ -23,7 +23,7 @@ void MarshalResponse(char* buffer, unsigned int code, unsigned int size, char* d
     resp.code = code;
     resp.size = size;
     if (data!= NULL) {
-        memcpy(resp.buffer, data, size);
+        memcpy(resp.buffer, data, MAX_BUFFER_SIZE);
     }
     if (size < MAX_BUFFER_SIZE) {
         resp.buffer[size] = '\0';
