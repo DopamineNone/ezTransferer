@@ -25,6 +25,9 @@ void MarshalResponse(char* buffer, unsigned int code, unsigned int size, char* d
     if (data!= NULL) {
         memcpy(resp.buffer, data, size);
     }
+    if (size < MAX_BUFFER_SIZE) {
+        resp.buffer[size] = '\0';
+    }
     memcpy(buffer, &resp, sizeof(Response));
 }
 
@@ -34,6 +37,6 @@ void UnmarshalResponse(char* buffer, unsigned int* code, unsigned int *size, cha
     *code = resp.code;
     *size = resp.size;
     if (resp.buffer!= NULL) {
-        memcpy(data, resp.buffer, *size);
+        memcpy(data, resp.buffer, MAX_BUFFER_SIZE);
     }
 }

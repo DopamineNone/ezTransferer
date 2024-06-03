@@ -60,3 +60,5 @@ dkms.conf
 /repository
 /logs
 */bin
+*.txt
+*.pdf

@@ -40,7 +40,12 @@ int main() {
     server.sin_addr.s_addr = inet_addr(server_ip);
     server.sin_port = htons(PORT);
 
-    do {
+    while(1) {
+        printf("Enter An Instruction:(\"h\"for Help)\n");
+        scanf(" %c",&ins);
+        fflush(stdin);
+        if (ins == 'e') break;
+
         if ((client_socket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
             printf("Socket creation failed.\n");
             return 1;
@@ -49,9 +54,6 @@ int main() {
             printf("Connection failed.\n");
             return 1;
         }
-        printf("Enter An Instruction:(\"h\"for Help)\n");
-        scanf(" %c",&ins);
-        fflush(stdin);
         switch(ins){
             case 'f':
             fetch(client_socket);
@@ -62,15 +64,12 @@ int main() {
             case 'h':
             intro();
             break;
-            case 'e':
-            printf("Exiting...\n");
-            break;
             default:
             printf("Wrong!Input again or input \"h\"for Help\n");
             break;
         }
         closesocket(client_socket);
-    } while(ins != 'e');
+    } 
     
     WSACleanup();
     return 0;
@@ -102,6 +101,7 @@ void fetch(SOCKET client_socket){
     FILE *fp = fopen(filename, "wb");
     if (fp == NULL) {
         printf("File creation failed.\n");
+        return;
     }
 
     // receive
@@ -109,14 +109,19 @@ void fetch(SOCKET client_socket){
     char buffer[sizeof(Response)];
     unsigned int code;
     unsigned int size;
-    char data[32517];
+    char data[MAX_BUFFER_SIZE];
 
-    while ((bytes_received = recv(client_socket, buffer, sizeof(Response), 0)) > 0) {
-        
+    do {
+        bytes_received = recv(client_socket, buffer, sizeof(Response), 0);
+        if (bytes_received <= 0) {
+            printf("Connection closed by server.\n");
+            fclose(fp);
+            return;
+        }
         UnmarshalResponse(buffer,&code, &size, data);
         if (code==TRANSFERING)
-            fwrite(data, 1, size, fp);
-    }
+            fwrite(data, sizeof(char), size, fp);
+    } while (code == START_TRANSFER || code == TRANSFERING);
 
     fclose(fp);
     printf("File downloaded successfully.\n");
@@ -135,15 +140,19 @@ void view(SOCKET client_socket){
     char buffer[sizeof(Response)];
     unsigned int code;
     unsigned int size;
-    char data[32517];
+    char data[MAX_BUFFER_SIZE];
 
     //receive
     do {
         bytes_received = recv(client_socket, buffer, sizeof(Response), 0);
+        if (bytes_received <= 0) {
+            printf("Connection closed by server.\n");
+            return;
+        }
         UnmarshalResponse(buffer,&code, &size, data);
-        if(code==2)
-            printf("%s",data);
-    }  while(code!=3);
+        if(code == TRANSFERING) 
+            printf("%s", data);
+    }  while(code == START_TRANSFER || code == TRANSFERING);
     printf("\n");
 }
 
