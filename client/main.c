@@ -49,7 +49,8 @@ int main() {
         printf("Connection failed.\n");
         return 1;
     }
-    scanf("%c",&ins);
+    ins = getchar();
+    getchar();
 
     printf("Enter An Instruction:(\"h\"for Help)\n");
     while(ins != 'e'){
@@ -68,7 +69,8 @@ int main() {
             printf("Wrong!Input again or input \"h\"for Help\n");
             break;
         }
-        scanf(" %c",&ins);
+        ins = getchar();
+        getchar();
     }
 
     closesocket(client_socket);
