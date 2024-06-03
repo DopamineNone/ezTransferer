@@ -30,11 +30,6 @@ int main() {
         return 1;
     }
 
-    if ((client_socket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
-        printf("Socket creation failed.\n");
-        return 1;
-    }
-
     printf("Enter the server IP address: ");
     fgets(server_ip, sizeof(server_ip), stdin);
     server_ip[strcspn(server_ip, "\n")] = 0;
@@ -45,14 +40,18 @@ int main() {
     server.sin_addr.s_addr = inet_addr(server_ip);
     server.sin_port = htons(PORT);
 
-    if (connect(client_socket, (struct sockaddr *)&server, sizeof(server)) < 0) {
-        printf("Connection failed.\n");
-        return 1;
-    }
-    printf("Enter An Instruction:(\"h\"for Help)\n");
-    scanf(" %c",&ins);
-    fflush(stdin);
-    while(ins != 'e'){
+    do {
+        if ((client_socket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+            printf("Socket creation failed.\n");
+            return 1;
+        }
+        if (connect(client_socket, (struct sockaddr *)&server, sizeof(server)) < 0) {
+            printf("Connection failed.\n");
+            return 1;
+        }
+        printf("Enter An Instruction:(\"h\"for Help)\n");
+        scanf(" %c",&ins);
+        fflush(stdin);
         switch(ins){
             case 'f':
             fetch(client_socket);
@@ -63,16 +62,16 @@ int main() {
             case 'h':
             intro();
             break;
+            case 'e':
+            printf("Exiting...\n");
+            break;
             default:
             printf("Wrong!Input again or input \"h\"for Help\n");
             break;
         }
-        printf("Enter An Instruction:(\"h\"for Help)\n");
-        scanf(" %c",&ins);
-        fflush(stdin);
-    }
-
-    closesocket(client_socket);
+        closesocket(client_socket);
+    } while(ins != 'e');
+    
     WSACleanup();
     return 0;
 
@@ -125,6 +124,7 @@ void fetch(SOCKET client_socket){
 }
 
 void view(SOCKET client_socket){
+    printf("\nDirectory of the files:\n");
     char buffer_view[sizeof(Request)];
     MarshalRequest(buffer_view, 1, NULL);
 
@@ -136,16 +136,14 @@ void view(SOCKET client_socket){
     unsigned int code;
     unsigned int size;
     char data[32517];
-    
-    //receive
 
-    while ((bytes_received = recv(client_socket, buffer, sizeof(Response), 0)) > 0) {
-        
+    //receive
+    do {
+        bytes_received = recv(client_socket, buffer, sizeof(Response), 0);
         UnmarshalResponse(buffer,&code, &size, data);
         if(code==2)
             printf("%s",data);
-
-    }
+    }  while(code!=3);
     printf("\n");
 }
 
