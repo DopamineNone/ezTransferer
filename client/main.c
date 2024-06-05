@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<WinSock2.h>
+#include <Windows.h>
 
 #include"..\\api\\src\\ezTransferer.c"
 
@@ -12,6 +13,7 @@
 void fetch(SOCKET);
 void intro();
 void view(SOCKET);
+void updateProgress(int);
 
 
 int main() {
@@ -90,14 +92,16 @@ void fetch(SOCKET client_socket){
     
     printf("\nEnter the filename you want to download: ");
     fgets(filename, 100, stdin);
-    // 去除换行符
     filename[strcspn(filename, "\n")] = 0;
 
     char buffer_name[sizeof(Request)];
     MarshalRequest(buffer_name, 0, filename);
     send(client_socket, buffer_name, sizeof(Request), 0);
 
-    // 创建并打开文件以写入
+    // file create
+    char sufix[]=".bak";
+    strcat(filename,sufix);
+    filename[strcspn(filename, "\n")] = 0;
     FILE *fp = fopen(filename, "wb");
     if (fp == NULL) {
         printf("File creation failed.\n");
@@ -111,6 +115,11 @@ void fetch(SOCKET client_socket){
     unsigned int size;
     char data[MAX_BUFFER_SIZE];
 
+    //to show progress
+    int file_size;
+    int total_transferred = 0;
+    int transfer_size;    
+
     do {
         bytes_received = recv(client_socket, buffer, sizeof(Response), 0);
         if (bytes_received <= 0) {
@@ -119,13 +128,26 @@ void fetch(SOCKET client_socket){
             return;
         }
         UnmarshalResponse(buffer,&code, &size, data);
-        if (code==TRANSFERING)
+        if (code==START_TRANSFER)
+            file_size = size;
+        else if (code==TRANSFERING){
             fwrite(data, sizeof(char), size, fp);
+            
+        //progresss
+            transfer_size = size;
+            total_transferred += transfer_size;
+
+            int progress = (int)((double)total_transferred / file_size * 100);
+
+            updateProgress(progress);
+
+            Sleep(200);                    
+        }
+
     } while (code == START_TRANSFER || code == TRANSFERING);
 
     fclose(fp);
-    printf("File downloaded successfully.\n");
-
+    printf("%d Bytes received, and saved as %s",total_transferred,filename);
 }
 
 void view(SOCKET client_socket){
@@ -156,3 +178,19 @@ void view(SOCKET client_socket){
     printf("\n");
 }
 
+void updateProgress(int progress) {
+    int barWidth = 100;
+
+    printf("[");
+    int pos = barWidth * progress / 100;
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos)
+            printf("=");
+        else if (i == pos)
+            printf(">");
+        else
+            printf(" ");
+    }
+    printf("] %d%%\r", progress);
+    fflush(stdout);
+}
