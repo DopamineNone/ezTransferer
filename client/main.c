@@ -43,7 +43,7 @@ int main() {
     server.sin_port = htons(PORT);
 
     while(1) {
-        printf("\nEnter An Instruction:(\"h\"for Help)\n");
+        printf("Enter An Instruction:(\"h\"for Help)\n");
         scanf(" %c",&ins);
         fflush(stdin);
         if (ins == 'e') break;
@@ -82,7 +82,7 @@ void intro(){
     printf("This is a file tranferer\n");
     printf("Input \"f\" to Fetch file from server\n");
     printf("Input \"v\" to View the directory of the files\n");
-    printf("Input \"e\" to Exit\n");
+    printf("Input \"e\" to Exit\n\n");
 }
 
 
@@ -148,16 +148,17 @@ void fetch(SOCKET client_socket){
 
     fclose(fp);
     if (total_transferred==0){
-        printf("No Bytes received,but we still saved it as \" %s \"; maybe you entered a wrong name?\n",filename);
-        printf("Enter \"d\" to Delete it or Enter any other SINGLE letter to Keep it:");
+        printf("No Bytes received,but we still saved it as \"%s\"\n",filename);
+        printf("Do you want to remove it? [y/N]:");
         char c;
         scanf(" %c",&c);
         fflush(stdin);
-        if (c=='d')
+        if (c=='y')
             remove(filename);
+        printf("\n");
     }
     else
-        printf("\n%d Bytes received, and saved as %s\n",total_transferred,filename);
+        printf("\n%d Bytes received, and saved as %s\n\n",total_transferred,filename);
 }
 
 void view(SOCKET client_socket){
@@ -185,7 +186,7 @@ void view(SOCKET client_socket){
         if(code == TRANSFERING) 
             printf("%s", data);
     }  while(code == START_TRANSFER || code == TRANSFERING);
-    printf("\n");
+    printf("\n\n");
 }
 
 void updateProgress(int progress) {
