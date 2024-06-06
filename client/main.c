@@ -19,7 +19,7 @@ void updateProgress(int);
 int main() {
     char ins;
 
-    printf("///EZTRANSFER///\n");
+    printf("//////ezTransferer//////\n");
 
     WSADATA wsa;
     SOCKET client_socket;
@@ -43,7 +43,7 @@ int main() {
     server.sin_port = htons(PORT);
 
     while(1) {
-        printf("Enter An Instruction:(\"h\"for Help)\n");
+        printf("\nEnter An Instruction:(\"h\"for Help)\n");
         scanf(" %c",&ins);
         fflush(stdin);
         if (ins == 'e') break;
@@ -90,7 +90,7 @@ void fetch(SOCKET client_socket){
     
     char filename[100];
     
-    printf("\nEnter the filename you want to download: ");
+    printf("Enter the filename you want to download: ");
     fgets(filename, 100, stdin);
     filename[strcspn(filename, "\n")] = 0;
 
@@ -141,17 +141,27 @@ void fetch(SOCKET client_socket){
 
             updateProgress(progress);
 
-            Sleep(200);                    
+            Sleep(500);                    
         }
 
     } while (code == START_TRANSFER || code == TRANSFERING);
 
     fclose(fp);
-    printf("%d Bytes received, and saved as %s",total_transferred,filename);
+    if (total_transferred==0){
+        printf("No Bytes received,but we still saved it as \" %s \"; maybe you entered a wrong name?\n",filename);
+        printf("Enter \"d\" to Delete it or Enter any other SINGLE letter to Keep it:");
+        char c;
+        scanf(" %c",&c);
+        fflush(stdin);
+        if (c=='d')
+            remove(filename);
+    }
+    else
+        printf("\n%d Bytes received, and saved as %s\n",total_transferred,filename);
 }
 
 void view(SOCKET client_socket){
-    printf("\nDirectory of the files:\n");
+    printf("Directory of the files:\n");
     char buffer_view[sizeof(Request)];
     MarshalRequest(buffer_view, 1, NULL);
 
