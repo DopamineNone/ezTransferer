@@ -141,7 +141,7 @@ void fetch(SOCKET client_socket){
 
             updateProgress(progress);
 
-            Sleep(500);                    
+            // Sleep(500);                    
         }
 
     } while (code == START_TRANSFER || code == TRANSFERING);
