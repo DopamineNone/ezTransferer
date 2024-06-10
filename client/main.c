@@ -147,8 +147,8 @@ void fetch(SOCKET client_socket){
     } while (code == START_TRANSFER || code == TRANSFERING);
 
     fclose(fp);
-    if (total_transferred==0){
-        printf("No Bytes received,but we still saved it as \"%s\"\n",filename);
+    if (total_transferred==0 || code == FA1LED){
+        printf("ERROR! No Bytes received ,but we still saved it as \"%s\"\n",filename);
         printf("Do you want to remove it? [y/N]:");
         char c;
         scanf(" %c",&c);
